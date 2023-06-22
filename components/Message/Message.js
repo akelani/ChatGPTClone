@@ -6,7 +6,7 @@ import { ReactMarkdown } from "react-markdown/lib/react-markdown";
 
 export const Message = ({ role, content }) => {
   const { user } = useUser();
-  console.log("USER: ", user);
+  //console.log("USER: ", user);
   return (
     <div
       className={`grid grid-cols-[30px_1fr] gap-5 p-5 ${
@@ -29,7 +29,12 @@ export const Message = ({ role, content }) => {
         )}
         {role === "assistant" && (
           <div className="flex h-[30px] w-[30px] items-center justify-center rounded-sm bg-gray-800 shadow-md shadow-black/50">
-            <FontAwesomeIcon icon={faRobot} className="text-emerald-200" />
+           <Image
+                    src="/Circle_USDC_Logo.png"
+                    width={20}
+                    height={20}
+                    alt="Picture of the author"
+                  />
           </div>
         )}
       </div>

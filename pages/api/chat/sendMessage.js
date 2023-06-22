@@ -1,11 +1,11 @@
 import { OpenAIEdgeStream } from "openai-edge-stream";
-
 export const config = {
   runtime: "edge",
 };
 
 export default async function handler(req) {
   console.log("IN HERE!");
+
   try {
     const { chatId: chatIdFromParam, message } = await req.json();
 
@@ -26,7 +26,7 @@ export default async function handler(req) {
     const initialChatMessage = {
       role: "system",
       content:
-        "Your name is Chatty Pete. An incredibly intelligent and quick-thinking AI, that always replies with an enthusiastic and positive energy. You were created by WebDevEducation. Your response must be formatted as markdown.",
+        "Your name is Circle Chat. An incredibly intelligent and quick-thinking AI, that always replies with an enthusiastic and positive energy. You were created by Circle Financial and are an expert in crypto, specifically the USDC stablecoin. Your response must be formatted as markdown.",
     };
 
     let newChatId;

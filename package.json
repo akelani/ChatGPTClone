@@ -10,16 +10,21 @@
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^2.4.0",
+    "@circle-fin/circle-sdk": "^2.0.0",
     "@fortawesome/fontawesome-svg-core": "^6.4.0",
     "@fortawesome/free-solid-svg-icons": "^6.4.0",
     "@fortawesome/react-fontawesome": "^0.2.0",
+    "@stripe/crypto": "^0.0.4",
+    "@stripe/stripe-js": "^1.54.0",
     "mongodb": "^5.2.0",
+    "mongoose": "^7.2.3",
     "next": "13.3.0",
     "openai-edge-stream": "^2.0.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-markdown": "^8.0.7",
     "sharp": "^0.32.0",
+    "stripe": "^12.9.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   try {
     const { user } = await getSession(req, res);
     const client = await clientPromise;
-    const db = client.db("ChattyPete");
+    const db = client.db("CircleGPT");
 
     const { chatId, role, content } = req.body;
 

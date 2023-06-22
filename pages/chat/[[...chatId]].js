@@ -3,6 +3,7 @@ import { faRobot } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ChatSidebar } from "components/ChatSidebar";
 import { Message } from "components/Message";
+import { getCircleWalletBalances } from "lib/circle";
 import clientPromise from "lib/mongodb";
 import { ObjectId } from "mongodb";
 import Head from "next/head";
@@ -10,8 +11,9 @@ import { useRouter } from "next/router";
 import { streamReader } from "openai-edge-stream";
 import { useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
+import Image from 'next/image';
 
-export default function ChatPage({ chatId, title, messages = [] }) {
+export default function ChatPage({ chatId, wallet, title, messages = [] }) {
   console.log("props: ", title, messages);
   const [newChatId, setNewChatId] = useState(null);
   const [incomingMessage, setIncomingMessage] = useState("");
@@ -20,9 +22,21 @@ export default function ChatPage({ chatId, title, messages = [] }) {
   const [generatingResponse, setGeneratingResponse] = useState(false);
   const [fullMessage, setFullMessage] = useState("");
   const [originalChatId, setOriginalChatId] = useState(chatId);
+  // const [balance, setBalance] = useState(0);
+  const [userWallet, setUserWallet] = useState({ balance: { currency: "USD", amount: 0 }, depositAddresses: [] });
   const router = useRouter();
 
   const routeHasChanged = chatId !== originalChatId;
+  console.log(wallet)
+  useEffect(() => {
+    setUserWallet({
+      balance: {
+        currency: wallet.balances[0]?.currency || "",
+        amount: wallet.balances[0]?.amount || 0
+      },
+      depositAddresses: wallet.depositAddresses || []
+    });
+  }, [wallet])
 
   // when our route changes
   useEffect(() => {
@@ -55,6 +69,38 @@ export default function ChatPage({ chatId, title, messages = [] }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (userWallet.balance.amount <= 0) {
+      console.log("Err");
+      alert("No USDC. Please reload wallet.");
+      return;
+    }
+
+    // Transfer 0.01 USDC for each message sent
+    const walletId = wallet.walletId;
+    const transferRes = await fetch(`/api/wallet/transfer`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sourceWalletId: walletId
+      }),
+    });
+    if (!transferRes) {
+      return;
+    }
+
+    const newAmount = userWallet.balance.amount - 0.01;
+    const newBalance = { ...userWallet.balance, amount: newAmount }
+    console.log("new Amount" + newAmount);
+    console.log(newBalance);
+    setUserWallet({
+      ...userWallet,
+      balance: newBalance,
+    })
+    //console.log("Amount" + userWallet.balance.amount);
+
     setGeneratingResponse(true);
     setOriginalChatId(chatId);
     setNewChatMessages((prev) => {
@@ -108,16 +154,23 @@ export default function ChatPage({ chatId, title, messages = [] }) {
         <title>New chat</title>
       </Head>
       <div className="grid h-screen grid-cols-[260px_1fr]">
-        <ChatSidebar chatId={chatId} />
+        <ChatSidebar chatId={chatId} wallet={userWallet} />
         <div className="flex flex-col overflow-hidden bg-gray-700">
           <div className="flex flex-1 flex-col-reverse overflow-scroll text-white">
             {!allMessages.length && !incomingMessage && (
               <div className="m-auto flex items-center justify-center text-center">
                 <div>
-                  <FontAwesomeIcon
+                  {/* <FontAwesomeIcon
                     icon={faRobot}
                     className="text-6xl text-emerald-200"
-                  />
+                  /> */}
+                  <div className="flex justify-center items-center">
+                    <Image
+                      src="/Circle_USDC_Logo.png"
+                      width={100}
+                      height={100}
+                      alt="Picture of the author"
+                    /></div>
                   <h1 className="mt-2 text-4xl font-bold text-white/50">
                     Ask me a question!
                   </h1>
@@ -167,7 +220,13 @@ export default function ChatPage({ chatId, title, messages = [] }) {
 }
 
 export const getServerSideProps = async (ctx) => {
+  console.log("Logged in!");
   const chatId = ctx.params?.chatId?.[0] || null;
+  const { user } = await getSession(ctx.req, ctx.res);
+
+  const balances = await getCircleWalletBalances(user.wallets[0].walletId);
+  user.wallets[0].balances = balances;
+
   if (chatId) {
     let objectId;
 
@@ -181,9 +240,9 @@ export const getServerSideProps = async (ctx) => {
       };
     }
 
-    const { user } = await getSession(ctx.req, ctx.res);
     const client = await clientPromise;
-    const db = client.db("ChattyPete");
+    const db = client.db("CircleGPT");
+
     const chat = await db.collection("chats").findOne({
       userId: user.sub,
       _id: objectId,
@@ -200,6 +259,7 @@ export const getServerSideProps = async (ctx) => {
     return {
       props: {
         chatId,
+        wallet: user.wallets[0],
         title: chat.title,
         messages: chat.messages.map((message) => ({
           ...message,
@@ -208,7 +268,10 @@ export const getServerSideProps = async (ctx) => {
       },
     };
   }
+
   return {
-    props: {},
+    props: {
+      wallet: user?.wallets[0] || null,
+    },
   };
 };
